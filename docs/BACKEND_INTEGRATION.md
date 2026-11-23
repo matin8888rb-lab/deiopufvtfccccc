@@ -1,7 +1,7 @@
 # COUNCIL HQ — Backend integration blueprint
 
 ## Current release boundary
-The GitHub Pages application remains a browser-based client. Supabase Auth is connected, and first sign-in creates a private owner workspace plus seven council-member profiles. The PostgreSQL schema currently contains 17 tables with RLS enabled. There is no model provider, Edge Function gateway, background worker, or scheduled agent execution yet. Demo messages are seeded examples, not real agent output. Projects, journal entries, research proposals, and user-authored chat messages sync to Supabase; LocalStorage remains a device cache/backup. Deletes and multi-device conflict resolution are not implemented yet.
+The GitHub Pages application remains a browser-based client. Supabase Auth is connected, and first sign-in creates a private owner workspace plus seven council-member profiles. The PostgreSQL schema currently contains 17 tables with RLS enabled. There is no model provider, Edge Function gateway, background worker, or scheduled agent execution yet. Demo messages are seeded examples, not real agent output. Projects, journal entries, research proposals, user-authored chat messages, tasks, task dependencies, meetings, meeting participants, decisions, decision evidence, and audit events sync to Supabase; LocalStorage remains a device cache/backup. Deletion for tasks is supported; synchronized deletion for projects/journal/research/chat and multi-device conflict resolution are not implemented yet.
 
 ## Target architecture
 - **Web client:** this repository; Persian RTL, mobile-first PWA.
@@ -36,10 +36,11 @@ The GitHub Pages application remains a browser-based client. Supabase Auth is co
 - Add the public Supabase URL and publishable key to the client configuration only; never add service-role or model keys to Git.
 - [x] Connect the client to Auth and bootstrap an owner workspace and seven member profiles.
 - [x] Connect project, journal, research proposal, and user chat create/update sync to the database.
-- [ ] Connect task and meeting workflows; add synchronized deletion and multi-device conflict resolution.
+- [x] Connect task create/status/delete, meeting create/start/finish, decision create/status, evidence, and audit-event workflows.
+- [ ] Add synchronized deletion for project/journal/research/chat and multi-device conflict resolution.
 - [ ] Verify RLS with separate owner and non-owner sessions.
 - Add a bounded queue/scheduler and test pause, retry, quota, and human-approval paths.
 - Run end-to-end tests before enabling real agent actions.
 
 ## Not activated yet
-The Supabase project is live and connected for authentication and workspace bootstrap. The current database has 17 public tables and RLS enabled. Project, journal, research proposal, and user-message sync is active in the client after authentication. Task/meeting CRUD, Edge Functions, model provider, event orchestrator, scheduler, and automated research are not active. The initial schema was applied directly and still needs a checked-in migration artifact before future schema changes.
+The Supabase project is live and connected for authentication and workspace bootstrap. The current database has 17 public tables and RLS enabled. Project, journal, research proposal, and user-message sync is active in the client after authentication. Task, meeting, decision, evidence, and audit-event workflows are connected in the client. Edge Functions, model provider, event orchestrator, scheduler, and automated research are not active. The initial schema was applied directly and still needs a checked-in migration artifact before future schema changes.
