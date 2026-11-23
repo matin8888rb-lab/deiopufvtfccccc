@@ -225,8 +225,10 @@ async function handleHQSession(session){
     logs.splice(0,logs.length,...JSON.parse(JSON.stringify(HQ_BASE_LOGS)));
     research.splice(0,research.length);
     window.__hqChatHistory=[];
+    let userSaved=null;
+    window.__hqChatRecords=[];
     try{
-      const userSaved=JSON.parse(localStorage.getItem(HQ_STORE_KEY)||'null');
+      userSaved=JSON.parse(localStorage.getItem(HQ_STORE_KEY)||'null');
       if(userSaved){
         if(Array.isArray(userSaved.projects))projects.splice(0,projects.length,...userSaved.projects);
         if(Array.isArray(userSaved.logs))logs.splice(0,logs.length,...userSaved.logs);
@@ -234,6 +236,11 @@ async function handleHQSession(session){
         window.__hqChatHistory=Array.isArray(userSaved.chatHistory)?userSaved.chatHistory:[];
       }
     }catch(e){console.warn('User-local data restore failed',e);}
+    window.__hqChatRecords=Array.isArray(userSaved?.chatRecords)?userSaved.chatRecords:[];
+    window.__hqSessionUser=session.user;
+    window.__hqWorkspaceId=workspace.id;
+    try{await hqLoadCloudData(session.user,workspace);}
+    catch(syncError){console.error('Initial cloud sync failed',syncError);toast('اتصال حساب برقرار شد؛ داده‌ها فعلاً روی همین دستگاه می‌مانند.');}
     renderProjects();renderLogs();renderResearch();renderChat();
     window.__hqChatHistory.forEach(m=>{const el=document.createElement('div');el.className='msg';const p=document.createElement('p');p.textContent=m;el.append(p);$('chatFeed').append(el);});
     document.body.classList.add('authenticated');
@@ -241,7 +248,6 @@ async function handleHQSession(session){
     document.querySelector('.side-foot small').textContent='فضای کاری امن · متصل به Supabase';
     document.querySelector('.side-foot b').textContent='هسته حساب فعال';
     toast('فضای کاری خصوصی آماده است');
-    window.__hqWorkspaceId=workspace.id;
   }catch(err){
     showAuthMessage('حساب وارد شد، اما راه‌اندازی فضای کاری کامل نشد: '+(err.message||'خطای پایگاه داده'),true);
     await sbClient.auth.signOut();
@@ -250,8 +256,121 @@ async function handleHQSession(session){
 $('signOutBtn').addEventListener('click',async()=>{
   const {error}=await sbClient.auth.signOut();
   if(error){toast('خروج انجام نشد');return;}
+  window.__hqSessionUser=null;window.__hqWorkspaceId=null;
   document.body.classList.remove('authenticated');
   $('accountStatus').textContent='اتصال حساب';
 });
 sbClient.auth.onAuthStateChange((_event,session)=>{if(session)setTimeout(()=>handleHQSession(session),0);});
+
+/* Cloud sync v1: projects, journal, research proposals and user chat.
+   RLS remains the authority; only the signed-in owner's workspace is queried. */
+function hqUuid(){
+  if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();
+  const b=new Uint8Array(16);crypto.getRandomValues(b);b[6]=(b[6]&15)|64;b[8]=(b[8]&63)|128;
+  const s=[...b].map(x=>x.toString(16).padStart(2,'0')).join('');
+  return s.slice(0,8)+'-'+s.slice(8,12)+'-'+s.slice(12,16)+'-'+s.slice(16,20)+'-'+s.slice(20);
+}
+function hqProjectStatusToDb(value){
+  const v=String(value||'').toLowerCase();
+  if(v.includes('تکمیل')||v.includes('انجام'))return 'completed';
+  if(v.includes('توقف')||v.includes('متوقف'))return 'paused';
+  if(v.includes('مسدود'))return 'blocked';
+  if(v.includes('در حال'))return 'active';
+  return 'planning';
+}
+function hqProjectStatusFromDb(value){
+  return ({planning:'در انتظار برنامه‌ریزی',active:'در حال اجرا',paused:'متوقف',blocked:'مسدود',completed:'تکمیل‌شده',archived:'بایگانی‌شده'})[value]||'در حال برنامه‌ریزی';
+}
+function hqEnsureLocalIds(){
+  projects.forEach(p=>{if(!p.id)p.id=hqUuid();});
+  logs.forEach(l=>{if(!l.id)l.id=hqUuid();});
+  research.forEach(r=>{if(!r.id)r.id=hqUuid();});
+  const history=window.__hqChatHistory||[];
+  const old=window.__hqChatRecords||[];
+  window.__hqChatRecords=history.map((content,i)=>({id:old[i]?.id||hqUuid(),content:String(content)}));
+}
+function hqProjectRow(p,user,workspace){
+  return {id:p.id,workspace_id:workspace.id,owner_id:user.id,name:String(p.name||'پروژه بدون نام'),
+    description:String(p.desc||p.description||''),status:hqProjectStatusToDb(p.status),
+    priority:'normal',progress:Math.max(0,Math.min(100,Number(p.progress)||0))};
+}
+function hqLogRow(l,user,workspace){
+  return {id:l.id,workspace_id:workspace.id,owner_id:user.id,entry_type:String(l.title||'').startsWith('جلسه:')?'minutes':'activity_report',
+    title:String(l.title||'یادداشت'),body:String(l.body||''),tags:[String(l.time||'')].filter(Boolean)};
+}
+function hqResearchRow(r,user,workspace){
+  return {id:r.id,workspace_id:workspace.id,owner_id:user.id,title:String(r.topic||r.title||'پژوهش بدون عنوان'),
+    question:String(r.goal||r.question||''),status:'proposed',findings:'',sources:[],conclusion:''};
+}
+function hqMessageRow(m,user,workspace){
+  return {id:m.id,workspace_id:workspace.id,owner_id:user.id,sender_type:'user',content:m.content,
+    message_kind:'chat',metadata:{client:'council-hq-web'}};
+}
+async function hqLoadCloudData(user,workspace){
+  const [pRes,lRes,rRes,mRes]=await Promise.all([
+    sbClient.from('projects').select('*').eq('workspace_id',workspace.id).order('created_at',{ascending:true}),
+    sbClient.from('journal_entries').select('*').eq('workspace_id',workspace.id).order('created_at',{ascending:true}),
+    sbClient.from('research_items').select('*').eq('workspace_id',workspace.id).order('created_at',{ascending:true}),
+    sbClient.from('messages').select('*').eq('workspace_id',workspace.id).eq('sender_type','user').eq('message_kind','chat').order('created_at',{ascending:true})
+  ]);
+  for(const x of [pRes,lRes,rRes,mRes])if(x.error)throw x.error;
+  hqEnsureLocalIds();
+  if(pRes.data.length){
+    projects.splice(0,projects.length,...pRes.data.map(p=>({id:p.id,name:p.name,desc:p.description,progress:p.progress,status:hqProjectStatusFromDb(p.status),tasks:0})));
+  }else if(projects.length){
+    const {error}=await sbClient.from('projects').upsert(projects.map(p=>hqProjectRow(p,user,workspace)),{onConflict:'id'});
+    if(error)throw error;
+  }
+  if(lRes.data.length){
+    logs.splice(0,logs.length,...lRes.data.map(l=>({id:l.id,title:l.title,body:l.body,time:(l.tags&&l.tags[0])||new Date(l.created_at).toLocaleString('fa-IR')})));
+  }else if(logs.length){
+    const {error}=await sbClient.from('journal_entries').upsert(logs.map(l=>hqLogRow(l,user,workspace)),{onConflict:'id'});
+    if(error)throw error;
+  }
+  if(rRes.data.length){
+    research.splice(0,research.length,...rRes.data.map(r=>({id:r.id,topic:r.title,goal:r.question})));
+  }else if(research.length){
+    const {error}=await sbClient.from('research_items').upsert(research.map(r=>hqResearchRow(r,user,workspace)),{onConflict:'id'});
+    if(error)throw error;
+  }
+  if(mRes.data.length){
+    window.__hqChatRecords=mRes.data.map(m=>({id:m.id,content:m.content}));
+    window.__hqChatHistory=window.__hqChatRecords.map(m=>m.content);
+  }else if(window.__hqChatRecords.length){
+    const {error}=await sbClient.from('messages').upsert(window.__hqChatRecords.map(m=>hqMessageRow(m,user,workspace)),{onConflict:'id'});
+    if(error)throw error;
+  }
+  hqEnsureLocalIds();
+  persistHQLocal();
+}
+function persistHQLocal(){
+  try{localStorage.setItem(HQ_STORE_KEY,JSON.stringify({projects,logs,research,chatHistory:window.__hqChatHistory||[],chatRecords:window.__hqChatRecords||[]}));}
+  catch(e){console.warn('Local save unavailable',e);}
+}
+let hqCloudSyncChain=Promise.resolve();
+async function syncHQCloudNow(){
+  const user=window.__hqSessionUser,workspaceId=window.__hqWorkspaceId;
+  if(!user||!workspaceId)return;
+  hqEnsureLocalIds();
+  const workspace={id:workspaceId};
+  const writes=[
+    projects.length?sbClient.from('projects').upsert(projects.map(p=>hqProjectRow(p,user,workspace)),{onConflict:'id'}):Promise.resolve({error:null}),
+    logs.length?sbClient.from('journal_entries').upsert(logs.map(l=>hqLogRow(l,user,workspace)),{onConflict:'id'}):Promise.resolve({error:null}),
+    research.length?sbClient.from('research_items').upsert(research.map(r=>hqResearchRow(r,user,workspace)),{onConflict:'id'}):Promise.resolve({error:null}),
+    (window.__hqChatRecords||[]).length?sbClient.from('messages').upsert(window.__hqChatRecords.map(m=>hqMessageRow(m,user,workspace)),{onConflict:'id'}):Promise.resolve({error:null})
+  ];
+  const results=await Promise.all(writes);
+  const failed=results.find(x=>x.error);
+  if(failed)throw failed.error;
+}
+function queueHQCloudSync(){
+  persistHQLocal();
+  if(!window.__hqSessionUser||!window.__hqWorkspaceId)return;
+  hqCloudSyncChain=hqCloudSyncChain.then(syncHQCloudNow).catch(err=>{
+    console.error('COUNCIL HQ cloud sync failed',err);
+    toast('ذخیره محلی انجام شد؛ همگام‌سازی ابری با خطا روبه‌رو شد.');
+  });
+}
+persistHQ=function(){queueHQCloudSync();};
+
 </script></body></html>
