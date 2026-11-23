@@ -15,7 +15,7 @@
 - PWA و cache آفلاین پایه
 
 ## انتشار
-مخزن را روی شاخه `main` نگه دار. Workflow موجود در `.github/workflows/deploy-pages.yml` پس از هر push سایت را به GitHub Pages منتشر می‌کند. در صورت نیاز، در **Settings → Pages**، منبع GitHub Actions را انتخاب کن.
+برای فعال‌سازی اولیه، یک‌بار وارد **Settings → Pages** مخزن شو و در بخش Build and deployment، گزینه **GitHub Actions** را به‌عنوان Source انتخاب کن. سپس Workflow موجود در `.github/workflows/deploy-pages.yml` پس از هر push به شاخه `main` سایت را منتشر می‌کند. توکن اتصال فعلی اجازه فعال‌سازی Pages از طریق API را ندارد، بنابراین این تنظیم اولیه باید توسط مالک مخزن انجام شود.
 
 ## محدودیت‌های مهم و شفاف
 این نسخه هنوز یک سامانه چندعاملی واقعی نیست:
