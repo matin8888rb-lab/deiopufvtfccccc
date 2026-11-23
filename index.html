@@ -12,14 +12,44 @@
 @media(max-width:900px){.app{grid-template-columns:1fr}.side{display:none}.main{padding:18px 16px 95px}.bottom{position:fixed;display:flex;bottom:0;right:0;left:0;z-index:10;background:#0b1524f2;border-top:1px solid var(--line);justify-content:space-around;padding:8px 4px calc(8px + env(safe-area-inset-bottom));backdrop-filter:blur(14px)}.bottom button{border:0;background:none;color:#8296ad;font-size:9px;display:grid;gap:4px;justify-items:center;min-width:48px}.bottom button.active{color:var(--blue)}.bottom span{font-size:17px}.grid-main{grid-template-columns:1fr}.chat-shell{grid-template-columns:1fr}.side-info{display:none}.stats{grid-template-columns:repeat(2,1fr)}.member-grid{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:520px){.main{padding:14px 12px 100px}.top{margin-bottom:16px}.top h1{font-size:18px}.top .eyebrow{font-size:8px}.top-actions .ghost-btn{display:none}.welcome{padding:18px}.welcome h2{font-size:16px}.welcome p{font-size:10px}.member-grid{grid-template-columns:repeat(2,1fr)}.member-list{grid-template-columns:1fr}.stats{gap:8px}.stat{padding:12px}.stat strong{font-size:21px}.card{padding:14px}.chat-feed{height:390px}.demo-tag{font-size:8px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}body.reduce-motion *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
-</style></head>
+
+/* Supabase authentication gate */
+body:not(.authenticated) .app,body:not(.authenticated) .bottom{visibility:hidden}
+.auth-gate{position:fixed;inset:0;z-index:100;background:radial-gradient(ellipse at 75% 0%,#17314a 0,transparent 42%),#0b1220;display:grid;place-items:center;padding:20px;overflow:auto}
+body.authenticated .auth-gate{display:none}
+.auth-card{width:min(440px,100%);background:#142236;border:1px solid #36516b;border-radius:20px;padding:24px;box-shadow:0 24px 80px #0008}
+.auth-card h2{font-size:20px;margin:0 0 7px}.auth-card p{font-size:11px;line-height:1.9;color:#9fb2c8;margin:0 0 18px}
+.auth-card label{display:block;font-size:10px;color:#aabbd0;margin:12px 0 6px}
+.auth-card input{width:100%;background:#0c1828;border:1px solid #2c4058;border-radius:10px;padding:12px;color:#e8f0fa;outline:none}
+.auth-card input:focus{border-color:#38bdf8}
+.auth-actions{display:flex;gap:8px;margin-top:16px}.auth-actions button{flex:1}
+.auth-message{margin-top:12px;padding:10px;border-radius:10px;background:#38bdf814;color:#bae6fd;font-size:10px;line-height:1.8;display:none}
+.auth-message.error{background:#fb718515;color:#fecdd3}
+#accountStatus{font-size:10px;color:#9fb2c8;padding:8px}
+#signOutBtn{border:1px solid var(--line);background:#17263a;border-radius:10px;padding:8px 10px;font-size:10px}
+</style><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
 <body>
+
+<div class="auth-gate" id="authGate">
+  <div class="auth-card">
+    <div class="brand" style="padding:0 0 18px"><div class="brand-mark">⌘</div><div><strong>COUNCIL HQ</strong><small>SECURE WORKSPACE</small></div></div>
+    <h2 id="authTitle">ورود به مرکز فرماندهی</h2>
+    <p id="authIntro">برای دسترسی به فضای کاری خصوصی شورا، وارد حساب خود شو یا حساب جدید بساز. اطلاعات هر حساب از حساب‌های دیگر جداست.</p>
+    <form id="authForm">
+      <label for="authEmail">ایمیل</label><input id="authEmail" type="email" autocomplete="email" required placeholder="name@example.com">
+      <label for="authPassword">رمز عبور</label><input id="authPassword" type="password" autocomplete="current-password" minlength="8" required placeholder="حداقل ۸ نویسه">
+      <div class="auth-actions"><button class="primary" id="authSubmit" type="submit">ورود</button><button class="ghost-btn" id="authToggle" type="button">ساخت حساب</button></div>
+    </form>
+    <div class="auth-message" id="authMessage" role="status"></div>
+    <p style="margin:14px 0 0;font-size:9px">ورود امن با Supabase Auth · کلید عمومی پروژه در مرورگر استفاده می‌شود؛ کلید محرمانه در سایت قرار نگرفته است.</p>
+  </div>
+</div>
 <div class="app">
 <aside class="side"><div class="brand"><div class="brand-mark">⌘</div><div><strong>COUNCIL HQ</strong><small>INTELLIGENCE & COLLABORATION</small></div></div>
 <div class="nav-label">مرکز فرماندهی</div><nav class="nav" id="sideNav">
 <button class="active" data-page="dashboard"><span class="ico">◈</span>داشبورد مرکزی</button><button data-page="council"><span class="ico">◎</span>اتاق شورا</button><button data-page="members"><span class="ico">♙</span>اعضای شورا</button><button data-page="projects"><span class="ico">▦</span>مدیریت پروژه‌ها</button><button data-page="logbook"><span class="ico">▤</span>دفترچه شورا</button><button data-page="research"><span class="ico">⌕</span>آزمایشگاه پژوهش</button><button data-page="alerts"><span class="ico">♧</span>اعلان‌ها</button><button data-page="settings"><span class="ico">⚙</span>تنظیمات</button></nav>
 <div class="side-foot"><span class="live-dot"></span><b style="font-size:11px">هسته رابط فعال</b><br><small>نسخه نمایشی · بدون اتصال عامل هوشمند</small></div></aside>
-<main class="main"><header class="top"><div><div class="eyebrow">TACTICAL INTELLIGENCE CENTER</div><h1 id="pageTitle">داشبورد مرکزی</h1></div><div class="top-actions"><button class="ghost-btn" id="dateLabel">۲ آذر ۱۴۰۵</button><button class="icon-btn" onclick="navigate('alerts')" aria-label="اعلان‌ها">♧</button><button class="primary" onclick="openModal('جلسه جدید','session')">＋ جلسه جدید</button></div></header>
+<main class="main"><header class="top"><div><div class="eyebrow">TACTICAL INTELLIGENCE CENTER</div><h1 id="pageTitle">داشبورد مرکزی</h1></div><div class="top-actions"><span id="accountStatus">اتصال حساب</span><button id="signOutBtn" type="button">خروج</button><button class="ghost-btn" id="dateLabel">۲ آذر ۱۴۰۵</button><button class="icon-btn" onclick="navigate('alerts')" aria-label="اعلان‌ها">♧</button><button class="primary" onclick="openModal('جلسه جدید','session')">＋ جلسه جدید</button></div></header>
 <section class="page active" id="dashboard">
 <div class="welcome"><div><div class="eyebrow">خوش آمدی به مرکز فرماندهی</div><h2>شورا آماده برنامه‌ریزی است.</h2><p>اینجا مرکز هماهنگی اعضا، پروژه‌ها، تصمیم‌ها و پژوهش‌هاست.<br>هر تصمیم باید دلیل، شواهد و مسئول پیگیری داشته باشد.</p></div><span class="demo-tag">حالت نمایشی · DEMO</span></div>
 <div class="stats"><div class="stat"><div class="stat-head">اعضای شورا <span class="stat-icon">♙</span></div><strong>۷</strong><small>۶ عضو برابر + ۱ قاضی</small></div><div class="stat"><div class="stat-head">پروژه‌ها <span class="stat-icon">▦</span></div><strong id="projectCount">۲</strong><small>نمونه‌های ثبت‌شده</small></div><div class="stat"><div class="stat-head">وظایف باز <span class="stat-icon">◷</span></div><strong id="taskCount">۴</strong><small>در انتظار پیگیری</small></div><div class="stat"><div class="stat-head">تصمیم‌های نیازمند تأیید <span class="stat-icon">⚑</span></div><strong>۱</strong><small>نیازمند بررسی تو</small></div></div>
@@ -31,7 +61,7 @@
 <section class="page" id="logbook"><h2 class="section-title">دفترچه شورا</h2><p class="section-desc">ثبت صورت‌جلسه‌ها، یادداشت‌ها و گزارش فعالیت‌ها؛ داده‌های فعلی نمایشی‌اند.</p><div class="toolbar"><input class="field" id="logSearch" placeholder="جست‌وجو در دفترچه..."></div><div class="card" id="logEntries"></div></section>
 <section class="page" id="research"><h2 class="section-title">آزمایشگاه پژوهش</h2><p class="section-desc">موضوعات مستقل باید هدف، محدوده و خروجی مشخص داشته باشند.</p><div class="notice">پژوهش خودکار و جست‌وجوی زنده هنوز به سرویس هوش مصنوعی یا زمان‌بند متصل نیست. این بخش در حال حاضر برای ثبت ایده و طراحی روند پژوهش است.</div><div class="card"><div class="card-head"><h3>پیشنهاد موضوع پژوهشی</h3><span class="pill">ثبت ایده</span></div><form id="researchForm"><label class="subtle">موضوع</label><input class="field" id="researchTopic" required placeholder="مثلاً: آینده انرژی‌های تجدیدپذیر"><label class="subtle">هدف پژوهش</label><textarea class="field" id="researchGoal" rows="3" required placeholder="قرار است به چه پرسشی پاسخ بدهیم؟"></textarea><button class="primary" style="margin-top:12px">ثبت پیشنهاد</button></form></div><div class="card"><div class="card-head"><h3>موضوعات ثبت‌شده</h3></div><div id="researchList" class="empty">هنوز موضوعی ثبت نشده است.</div></div></section>
 <section class="page" id="alerts"><h2 class="section-title">مرکز اعلان‌ها</h2><p class="section-desc">هشدارها و مواردی که برای تصمیم‌گیری به توجه تو نیاز دارند.</p><div class="card"><div class="event"><div class="event-mark">⚑</div><div><p>طرح اولیه یک پروژه نیازمند تأیید توست.</p><small>نمونه اعلان · هیچ اقدامی انجام نشده است.</small></div></div><div class="event" style="margin-top:15px"><div class="event-mark">ⓘ</div><div><p>اتصال حافظه پایدار و عامل‌های هوشمند در مرحله بعدی توسعه قرار دارد.</p><small>اطلاع‌رسانی فنی</small></div></div></div></section>
-<section class="page" id="settings"><h2 class="section-title">تنظیمات</h2><p class="section-desc">کنترل تجربه کاربری و نمایش اطلاعات.</p><div class="card"><div class="card-head"><h3>ظاهر و دسترس‌پذیری</h3></div><div class="switch-row"><span>کاهش انیمیشن‌ها</span><input type="checkbox" id="motionToggle"></div><div class="switch-row"><span>نمایش داده‌های آزمایشی</span><input type="checkbox" checked disabled></div><div class="switch-row"><span>حالت راست‌چین فارسی</span><input type="checkbox" checked disabled></div></div><div class="card"><div class="card-head"><h3>وضعیت زیرساخت</h3></div><div class="notice">این نسخه رابط کاربری اولیه است. برای فعالیت واقعی شورا باید در مراحل بعدی سرور، پایگاه داده، احراز هویت، سرویس مدل‌های هوش مصنوعی، زمان‌بند رویدادها و کنترل هزینه API اضافه شوند.</div><p class="subtle">هیچ فعالیتی در پس‌زمینه اجرا نمی‌شود و نمونه‌ها به‌عنوان فعالیت واقعی اعضا نمایش داده نمی‌شوند.</p></div></section>
+<section class="page" id="settings"><h2 class="section-title">تنظیمات</h2><p class="section-desc">کنترل تجربه کاربری و نمایش اطلاعات.</p><div class="card"><div class="card-head"><h3>ظاهر و دسترس‌پذیری</h3></div><div class="switch-row"><span>کاهش انیمیشن‌ها</span><input type="checkbox" id="motionToggle"></div><div class="switch-row"><span>نمایش داده‌های آزمایشی</span><input type="checkbox" checked disabled></div><div class="switch-row"><span>حالت راست‌چین فارسی</span><input type="checkbox" checked disabled></div></div><div class="card"><div class="card-head"><h3>وضعیت زیرساخت</h3></div><div class="notice">احراز هویت و فضای کاری خصوصی به Supabase متصل شده‌اند. پروژه‌ها، گفت‌وگوهای هوشمند، موتور چندعاملی، پژوهش وب و زمان‌بند خودکار هنوز فعال نیستند و جداگانه پیاده‌سازی می‌شوند.</div><p class="subtle">هیچ فعالیتی در پس‌زمینه اجرا نمی‌شود و نمونه‌ها به‌عنوان فعالیت واقعی اعضا نمایش داده نمی‌شوند.</p></div></section>
 </main>
 </div>
 <nav class="bottom" id="bottomNav"><button class="active" data-page="dashboard"><span>◈</span>خانه</button><button data-page="council"><span>◎</span>شورا</button><button data-page="members"><span>♙</span>اعضا</button><button data-page="projects"><span>▦</span>پروژه</button><button data-page="logbook"><span>▤</span>دفترچه</button><button data-page="settings"><span>⚙</span>بیشتر</button></nav>
@@ -121,4 +151,91 @@ $('hqImport').addEventListener('change',async e=>{
   e.target.value='';
 });
 
+
+/* Supabase Auth + private workspace bootstrap */
+const SUPABASE_URL='https://hryfpqaekrbavywykyrj.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_h9Tmj_ZpVMFNgJ3mAxCmmg_o08rOj8B';
+const sbClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+let authMode='signin';
+const authMessage=$('authMessage');
+function showAuthMessage(message,isError=false){authMessage.textContent=message;authMessage.style.display='block';authMessage.classList.toggle('error',isError);}
+$('authToggle').addEventListener('click',()=>{
+  authMode=authMode==='signin'?'signup':'signin';
+  $('authTitle').textContent=authMode==='signin'?'ورود به مرکز فرماندهی':'ساخت حساب COUNCIL HQ';
+  $('authSubmit').textContent=authMode==='signin'?'ورود':'ساخت حساب';
+  $('authToggle').textContent=authMode==='signin'?'ساخت حساب':'بازگشت به ورود';
+  $('authPassword').autocomplete=authMode==='signin'?'current-password':'new-password';
+  authMessage.style.display='none';
+});
+$('authForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const email=$('authEmail').value.trim(),password=$('authPassword').value;
+  const submit=$('authSubmit');submit.disabled=true;submit.textContent='در حال بررسی...';
+  try{
+    if(authMode==='signup'){
+      const {data,error}=await sbClient.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0].split('?')[0]}});
+      if(error)throw error;
+      if(data.session){await handleHQSession(data.session);}
+      else showAuthMessage('حساب ثبت شد. ایمیل تأیید را باز کن و لینک تأیید را بزن؛ سپس به همین سایت برمی‌گردی.');
+    }else{
+      const {data,error}=await sbClient.auth.signInWithPassword({email,password});
+      if(error)throw error;
+      await handleHQSession(data.session);
+    }
+  }catch(err){showAuthMessage(err.message||'ورود انجام نشد. دوباره تلاش کن.',true);}
+  finally{submit.disabled=false;submit.textContent=authMode==='signin'?'ورود':'ساخت حساب';}
+});
+async function ensureHQWorkspace(user){
+  const profile={user_id:user.id,display_name:(user.user_metadata&&user.user_metadata.display_name)||user.email.split('@')[0]};
+  const {error:profileError}=await sbClient.from('profiles').upsert(profile,{onConflict:'user_id'});
+  if(profileError)throw profileError;
+  let {data:workspace,error}=await sbClient.from('workspaces').select('id,name').eq('owner_id',user.id).order('created_at',{ascending:true}).limit(1).maybeSingle();
+  if(error)throw error;
+  if(!workspace){
+    const created=await sbClient.from('workspaces').insert({owner_id:user.id,name:'COUNCIL HQ'}).select('id,name').single();
+    if(created.error)throw created.error;workspace=created.data;
+  }
+  const {count,error:memberError}=await sbClient.from('council_members').select('id',{count:'exact',head:true}).eq('workspace_id',workspace.id).eq('owner_id',user.id);
+  if(memberError)throw memberError;
+  if(!count){
+    const seed=[
+      {slug:'itachi',display_name:'ایتاچی',role_title:'استراتژیست و آینده‌نگر',color_hex:'#B91C1C',sort_order:1,specialties:['راهبرد','تحلیل پیامدها'],personality_notes:'آرام، عمیق و آینده‌نگر.'},
+      {slug:'kakashi',display_name:'کاکاشی',role_title:'مربی و متخصص فنی',color_hex:'#3B82F6',sort_order:2,specialties:['فناوری','حل مسئله'],personality_notes:'خونسرد، فنی و دقیق.'},
+      {slug:'naruto',display_name:'ناروتو',role_title:'ایده‌پرداز و خلاق',color_hex:'#F59E0B',sort_order:3,specialties:['ایده‌پردازی','تجربه کاربر'],personality_notes:'پرانرژی و خلاق.'},
+      {slug:'price',display_name:'کاپیتان پرایس',role_title:'مدیر عملیات',color_hex:'#16A34A',sort_order:4,specialties:['برنامه‌ریزی','مدیریت منابع'],personality_notes:'منظم، اجرایی و نتیجه‌گرا.'},
+      {slug:'arthur',display_name:'آرتور مورگان',role_title:'مشاور واقع‌گرا',color_hex:'#A16207',sort_order:5,specialties:['ریسک','هزینه و محدودیت'],personality_notes:'صریح و واقع‌گرا.'},
+      {slug:'ghost',display_name:'گوست',role_title:'بازرس و منتقد',color_hex:'#64748B',sort_order:6,specialties:['کنترل کیفیت','کشف تناقض'],personality_notes:'دقیق، مستقل و کم‌حرف.'},
+      {slug:'judge',display_name:'قاضی شورا',role_title:'داور بی‌طرف',color_hex:'#A855F7',sort_order:7,is_core:false,specialties:['داوری','جمع‌بندی اختلاف'],personality_notes:'منصف، استدلالی و بدون اختیار رهبری.'}
+    ].map(m=>({...m,workspace_id:workspace.id,owner_id:user.id,is_core:m.is_core!==false}));
+    const {error:seedError}=await sbClient.from('council_members').insert(seed);
+    if(seedError)throw seedError;
+  }
+  return workspace;
+}
+async function handleHQSession(session){
+  if(!session?.user)return;
+  try{
+    const workspace=await ensureHQWorkspace(session.user);
+    document.body.classList.add('authenticated');
+    $('accountStatus').textContent=session.user.email||'حساب متصل';
+    document.querySelector('.side-foot small').textContent='فضای کاری امن · متصل به Supabase';
+    document.querySelector('.side-foot b').textContent='هسته حساب فعال';
+    toast('فضای کاری خصوصی آماده است');
+    window.__hqWorkspaceId=workspace.id;
+  }catch(err){
+    showAuthMessage('حساب وارد شد، اما راه‌اندازی فضای کاری کامل نشد: '+(err.message||'خطای پایگاه داده'),true);
+    await sbClient.auth.signOut();
+  }
+}
+$('signOutBtn').addEventListener('click',async()=>{
+  const {error}=await sbClient.auth.signOut();
+  if(error){toast('خروج انجام نشد');return;}
+  document.body.classList.remove('authenticated');
+  $('accountStatus').textContent='اتصال حساب';
+});
+sbClient.auth.onAuthStateChange((_event,session)=>{if(session)setTimeout(()=>handleHQSession(session),0);});
+sbClient.auth.getSession().then(({data,error})=>{
+  if(error)showAuthMessage('بررسی نشست با خطا مواجه شد.',true);
+  else if(data.session)handleHQSession(data.session);
+});
 </script></body></html>
