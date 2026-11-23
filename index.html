@@ -98,7 +98,7 @@ $('researchForm').addEventListener('submit',()=>persistHQ());
 $('chatForm').addEventListener('submit',()=>{
   const sent=$('chatInput').value.trim();
   if(sent){window.__hqChatHistory=window.__hqChatHistory||[];window.__hqChatHistory.push(sent);setTimeout(persistHQ,0);}
-});
+},{capture:true});
 $('projectSearch').addEventListener('input',persistHQ);
 const backupPanel=document.createElement('div');
 backupPanel.className='card';
