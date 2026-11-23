@@ -12,6 +12,7 @@ function hqRestoreOpsLocal(saved){
   opsEvidence=Array.isArray(saved.opsEvidence)?saved.opsEvidence:[];
   hqExposeOps();
 }
+function hqResetOps(){opsTasks=[];opsDeps=[];opsMeetings=[];opsParticipants=[];opsDecisions=[];opsEvidence=[];opsAudit=[];opsMembers=[];hqExposeOps();}
 function hqExposeOps(){
   window.opsTasks=opsTasks;window.opsDeps=opsDeps;window.opsMeetings=opsMeetings;
   window.opsParticipants=opsParticipants;window.opsDecisions=opsDecisions;window.opsEvidence=opsEvidence;
