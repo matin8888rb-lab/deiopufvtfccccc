@@ -37,10 +37,12 @@ The GitHub Pages application remains a browser-based client. Supabase Auth is co
 - [x] Connect the client to Auth and bootstrap an owner workspace and seven member profiles.
 - [x] Connect project, journal, research proposal, and user chat create/update sync to the database.
 - [x] Connect task create/status/delete, meeting create/start/finish, decision create/status, evidence, and audit-event workflows.
+- [x] Add invoker-security database triggers that validate same-workspace references and reject task-dependency cycles.
+- [x] Check in the operational-integrity migration at `supabase/migrations/202611240001_council_operations_integrity.sql` (applied to the linked project).
 - [ ] Add synchronized deletion for project/journal/research/chat and multi-device conflict resolution.
 - [ ] Verify RLS with separate owner and non-owner sessions.
 - Add a bounded queue/scheduler and test pause, retry, quota, and human-approval paths.
 - Run end-to-end tests before enabling real agent actions.
 
 ## Not activated yet
-The Supabase project is live and connected for authentication and workspace bootstrap. The current database has 17 public tables and RLS enabled. Project, journal, research proposal, and user-message sync is active in the client after authentication. Task, meeting, decision, evidence, and audit-event workflows are connected in the client. Edge Functions, model provider, event orchestrator, scheduler, and automated research are not active. The initial schema was applied directly and still needs a checked-in migration artifact before future schema changes.
+The Supabase project is live and connected for authentication and workspace bootstrap. The current database has 17 public tables and RLS enabled. Project, journal, research proposal, and user-message sync is active in the client after authentication. Task, meeting, decision, evidence, and audit-event workflows are connected in the client. Edge Functions, model provider, event orchestrator, scheduler, and automated research are not active. The original 17-table schema was applied directly; the operational-integrity triggers now have a checked-in migration artifact and a recorded Supabase migration.
