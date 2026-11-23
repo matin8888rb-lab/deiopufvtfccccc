@@ -237,6 +237,7 @@ async function handleHQSession(session){
       }
     }catch(e){console.warn('User-local data restore failed',e);}
     window.__hqChatRecords=Array.isArray(userSaved?.chatRecords)?userSaved.chatRecords:[];
+    window.__hqHadLocalSnapshot=!!userSaved;
     window.__hqSessionUser=session.user;
     window.__hqWorkspaceId=workspace.id;
     try{await hqLoadCloudData(session.user,workspace);}
@@ -316,31 +317,52 @@ async function hqLoadCloudData(user,workspace){
   for(const x of [pRes,lRes,rRes,mRes])if(x.error)throw x.error;
   hqEnsureLocalIds();
   if(pRes.data.length){
-    projects.splice(0,projects.length,...pRes.data.map(p=>({id:p.id,name:p.name,desc:p.description,progress:p.progress,status:hqProjectStatusFromDb(p.status),tasks:0})));
+    const remote=pRes.data.map(p=>({id:p.id,name:p.name,desc:p.description,progress:p.progress,status:hqProjectStatusFromDb(p.status),tasks:0}));
+    const merged=new Map(remote.map(p=>[p.id,p]));
+    if(window.__hqHadLocalSnapshot)projects.forEach(p=>{if(!merged.has(p.id))merged.set(p.id,p);});
+    projects.splice(0,projects.length,...merged.values());
+    const {error}=await sbClient.from('projects').upsert(projects.map(p=>hqProjectRow(p,user,workspace)),{onConflict:'id'});
+    if(error)throw error;
   }else if(projects.length){
     const {error}=await sbClient.from('projects').upsert(projects.map(p=>hqProjectRow(p,user,workspace)),{onConflict:'id'});
     if(error)throw error;
   }
   if(lRes.data.length){
-    logs.splice(0,logs.length,...lRes.data.map(l=>({id:l.id,title:l.title,body:l.body,time:(l.tags&&l.tags[0])||new Date(l.created_at).toLocaleString('fa-IR')})));
+    const remote=lRes.data.map(l=>({id:l.id,title:l.title,body:l.body,time:(l.tags&&l.tags[0])||new Date(l.created_at).toLocaleString('fa-IR')}));
+    const merged=new Map(remote.map(l=>[l.id,l]));
+    if(window.__hqHadLocalSnapshot)logs.forEach(l=>{if(!merged.has(l.id))merged.set(l.id,l);});
+    logs.splice(0,logs.length,...merged.values());
+    const {error}=await sbClient.from('journal_entries').upsert(logs.map(l=>hqLogRow(l,user,workspace)),{onConflict:'id'});
+    if(error)throw error;
   }else if(logs.length){
     const {error}=await sbClient.from('journal_entries').upsert(logs.map(l=>hqLogRow(l,user,workspace)),{onConflict:'id'});
     if(error)throw error;
   }
   if(rRes.data.length){
-    research.splice(0,research.length,...rRes.data.map(r=>({id:r.id,topic:r.title,goal:r.question})));
+    const remote=rRes.data.map(r=>({id:r.id,topic:r.title,goal:r.question}));
+    const merged=new Map(remote.map(r=>[r.id,r]));
+    if(window.__hqHadLocalSnapshot)research.forEach(r=>{if(!merged.has(r.id))merged.set(r.id,r);});
+    research.splice(0,research.length,...merged.values());
+    const {error}=await sbClient.from('research_items').upsert(research.map(r=>hqResearchRow(r,user,workspace)),{onConflict:'id'});
+    if(error)throw error;
   }else if(research.length){
     const {error}=await sbClient.from('research_items').upsert(research.map(r=>hqResearchRow(r,user,workspace)),{onConflict:'id'});
     if(error)throw error;
   }
   if(mRes.data.length){
-    window.__hqChatRecords=mRes.data.map(m=>({id:m.id,content:m.content}));
+    const remote=mRes.data.map(m=>({id:m.id,content:m.content}));
+    const merged=new Map(remote.map(m=>[m.id,m]));
+    if(window.__hqHadLocalSnapshot)(window.__hqChatRecords||[]).forEach(m=>{if(!merged.has(m.id))merged.set(m.id,m);});
+    window.__hqChatRecords=[...merged.values()];
     window.__hqChatHistory=window.__hqChatRecords.map(m=>m.content);
+    const {error}=await sbClient.from('messages').upsert(window.__hqChatRecords.map(m=>hqMessageRow(m,user,workspace)),{onConflict:'id'});
+    if(error)throw error;
   }else if(window.__hqChatRecords.length){
     const {error}=await sbClient.from('messages').upsert(window.__hqChatRecords.map(m=>hqMessageRow(m,user,workspace)),{onConflict:'id'});
     if(error)throw error;
   }
   hqEnsureLocalIds();
+  window.__hqHadLocalSnapshot=true;
   persistHQLocal();
 }
 function persistHQLocal(){
