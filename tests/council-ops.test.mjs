@@ -50,3 +50,12 @@ test('user-controlled content is escaped before HTML rendering', () => {
   const esc = new Function(fn + '; return hqEsc;')();
   assert.equal(esc('<script>"x"&</script>'), '&lt;script&gt;&quot;x&quot;&amp;&lt;/script&gt;');
 });
+
+test('evidence links allow only HTTP and HTTPS', () => {
+  const fn = extractFunction('hqSafeUrl');
+  const safe = new Function(fn + '; return hqSafeUrl;')();
+  assert.equal(safe('https://example.com/path'), 'https://example.com/path');
+  assert.equal(safe('javascript:alert(1)'), '');
+  assert.equal(safe('data:text/html,hello'), '');
+  assert.equal(safe('not a url'), '');
+});
