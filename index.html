@@ -102,7 +102,9 @@ renderMembers();renderProjects();renderLogs();renderResearch();renderActivity();
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 
 /* COUNCIL HQ persistence patch: local-only by design; no AI/background claims. */
-const HQ_STORE_KEY='council-hq-local-v1';
+let HQ_STORE_KEY='council-hq-local-v1:guest';
+const HQ_BASE_PROJECTS=JSON.parse(JSON.stringify(projects));
+const HQ_BASE_LOGS=JSON.parse(JSON.stringify(logs));
 function persistHQ(){
   try{localStorage.setItem(HQ_STORE_KEY,JSON.stringify({projects,logs,research,chatHistory:window.__hqChatHistory||[]}));}catch(e){console.warn('Local save unavailable',e);}
 }
@@ -175,12 +177,12 @@ $('authForm').addEventListener('submit',async e=>{
     if(authMode==='signup'){
       const {data,error}=await sbClient.auth.signUp({email,password,options:{emailRedirectTo:location.href.split('#')[0].split('?')[0]}});
       if(error)throw error;
-      if(data.session){await handleHQSession(data.session);}
+      if(data.session){showAuthMessage('حساب ساخته شد؛ فضای کاری در حال آماده‌سازی است.');}
       else showAuthMessage('حساب ثبت شد. ایمیل تأیید را باز کن و لینک تأیید را بزن؛ سپس به همین سایت برمی‌گردی.');
     }else{
       const {data,error}=await sbClient.auth.signInWithPassword({email,password});
       if(error)throw error;
-      await handleHQSession(data.session);
+      showAuthMessage('ورود موفق بود؛ در حال آماده‌سازی فضای کاری...');
     }
   }catch(err){showAuthMessage(err.message||'ورود انجام نشد. دوباره تلاش کن.',true);}
   finally{submit.disabled=false;submit.textContent=authMode==='signin'?'ورود':'ساخت حساب';}
@@ -212,10 +214,28 @@ async function ensureHQWorkspace(user){
   }
   return workspace;
 }
+let hqBootstrapping=false;
 async function handleHQSession(session){
-  if(!session?.user)return;
+  if(!session?.user||hqBootstrapping)return;
+  hqBootstrapping=true;
   try{
     const workspace=await ensureHQWorkspace(session.user);
+    HQ_STORE_KEY='council-hq-local-v1:'+session.user.id;
+    projects.splice(0,projects.length,...JSON.parse(JSON.stringify(HQ_BASE_PROJECTS)));
+    logs.splice(0,logs.length,...JSON.parse(JSON.stringify(HQ_BASE_LOGS)));
+    research.splice(0,research.length);
+    window.__hqChatHistory=[];
+    try{
+      const userSaved=JSON.parse(localStorage.getItem(HQ_STORE_KEY)||'null');
+      if(userSaved){
+        if(Array.isArray(userSaved.projects))projects.splice(0,projects.length,...userSaved.projects);
+        if(Array.isArray(userSaved.logs))logs.splice(0,logs.length,...userSaved.logs);
+        if(Array.isArray(userSaved.research))research.splice(0,research.length,...userSaved.research);
+        window.__hqChatHistory=Array.isArray(userSaved.chatHistory)?userSaved.chatHistory:[];
+      }
+    }catch(e){console.warn('User-local data restore failed',e);}
+    renderProjects();renderLogs();renderResearch();renderChat();
+    window.__hqChatHistory.forEach(m=>{const el=document.createElement('div');el.className='msg';const p=document.createElement('p');p.textContent=m;el.append(p);$('chatFeed').append(el);});
     document.body.classList.add('authenticated');
     $('accountStatus').textContent=session.user.email||'حساب متصل';
     document.querySelector('.side-foot small').textContent='فضای کاری امن · متصل به Supabase';
@@ -225,7 +245,7 @@ async function handleHQSession(session){
   }catch(err){
     showAuthMessage('حساب وارد شد، اما راه‌اندازی فضای کاری کامل نشد: '+(err.message||'خطای پایگاه داده'),true);
     await sbClient.auth.signOut();
-  }
+  }finally{hqBootstrapping=false;}
 }
 $('signOutBtn').addEventListener('click',async()=>{
   const {error}=await sbClient.auth.signOut();
@@ -234,8 +254,4 @@ $('signOutBtn').addEventListener('click',async()=>{
   $('accountStatus').textContent='اتصال حساب';
 });
 sbClient.auth.onAuthStateChange((_event,session)=>{if(session)setTimeout(()=>handleHQSession(session),0);});
-sbClient.auth.getSession().then(({data,error})=>{
-  if(error)showAuthMessage('بررسی نشست با خطا مواجه شد.',true);
-  else if(data.session)handleHQSession(data.session);
-});
 </script></body></html>
