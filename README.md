@@ -1,18 +1,35 @@
-# COUNCIL HQ
+# COUNCIL HQ | مرکز فرماندهی شورا
 
-Persian RTL, mobile-first command-center PWA for a multi-member council.
+پنل فارسی، راست‌چین و سازگار با موبایل برای مدیریت یک شورای چندنقشی. نسخه فعلی یک **front-end تعاملی و محلی** است که مستقیماً روی GitHub Pages اجرا می‌شود.
 
-## Features in this first front-end release
-- Responsive dashboard, council room, member directory, projects, logbook, research, alerts and settings.
-- Distinct color identity for six equal council members and a separate judge.
-- Local interactive demo: add projects, log notes, submit a research proposal and send local chat messages.
-- Installable PWA shell and service-worker caching.
+## بخش‌های آماده
+- داشبورد مرکزی و وضعیت پروژه‌ها
+- اتاق شورا با نمونه گفت‌وگو و امکان ثبت پیام کاربر
+- هفت پروفایل با نقش و رنگ ثابت
+- مدیریت پروژه‌ها و ثبت پروژه جدید
+- دفترچه شورا و ثبت جلسه
+- آزمایشگاه و ثبت پیشنهاد پژوهش
+- اعلان‌ها و تنظیمات
+- ذخیره محلی پروژه‌ها، یادداشت‌ها و پیشنهادهای پژوهشی
+- پشتیبان‌گیری و بازیابی JSON
+- PWA و cache آفلاین پایه
 
-## Publish with GitHub Pages
-1. Open **Settings → Pages** in this repository.
-2. Select **Deploy from a branch**.
-3. Choose **main** and **/(root)**, then Save.
-4. Wait for the Pages deployment and open the URL shown there.
+## انتشار
+مخزن را روی شاخه `main` نگه دار. Workflow موجود در `.github/workflows/deploy-pages.yml` پس از هر push سایت را به GitHub Pages منتشر می‌کند. در صورت نیاز، در **Settings → Pages**، منبع GitHub Actions را انتخاب کن.
 
-## Important scope note
-This is an initial UI prototype. AI model calls, real multi-agent debate, authentication, cloud database, durable shared memory, background scheduling, external research and autonomous task execution are not implemented. All seeded activity and council messages are demo data. User-entered data is currently kept only in the active page session and is not guaranteed to persist after refresh. Irreversible actions and any external side effects must require explicit user approval in a future backend.
+## محدودیت‌های مهم و شفاف
+این نسخه هنوز یک سامانه چندعاملی واقعی نیست:
+- پیام‌های اعضا در اتاق شورا داده‌های نمونه‌اند؛ پاسخ هوشمند تولید نمی‌شود.
+- داده‌های کاربر در LocalStorage همین مرورگر ذخیره می‌شوند؛ همگام‌سازی ابری وجود ندارد.
+- Service Worker فقط cache آفلاین پایه فراهم می‌کند و به معنی اجرای دائمی در پس‌زمینه نیست.
+- پژوهش وب، صف وظایف، زمان‌بندی مستقل و اجرای خودکار هنوز فعال نیستند.
+
+## زیرساخت لازم برای نسخه عملیاتی کامل
+برای فعال شدن قابلیت‌های واقعی باید یک backend امن به پروژه متصل شود:
+1. احراز هویت و پایگاه داده با دسترسی مبتنی بر مالکیت و Row Level Security.
+2. API سمت سرور برای مدل زبانی؛ کلیدهای محرمانه هرگز نباید در فایل‌های عمومی یا مرورگر قرار بگیرند.
+3. موتور گردش‌کار چندعاملی، صف وظایف و زمان‌بند سمت سرور.
+4. ثبت ممیزی، سقف مصرف، توقف اضطراری و تأیید انسانی برای اقدامات حساس.
+5. اتصال جست‌وجوی منابع و ذخیره شواهد برای پژوهش‌ها.
+
+هیچ کلید API، حساب پولی یا سرویس خارجی در این مخزن فرض یا جعل نشده است. تا زمان پیکربندی backend، پنل وضعیت واقعی را به‌صورت «متصل نیست» نشان می‌دهد.
