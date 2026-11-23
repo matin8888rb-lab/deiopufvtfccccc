@@ -1,7 +1,7 @@
 # COUNCIL HQ — Backend integration blueprint
 
 ## Current release boundary
-The GitHub Pages application is a browser-only prototype. It has no server process, model provider, shared database, background worker, or scheduled agent execution. Demo messages are seeded examples, not real agent output. User-entered projects, journal entries, research ideas, and chat drafts can be saved locally and exported as JSON.
+The GitHub Pages application remains a browser-based client. Supabase Auth is connected, and first sign-in creates a private owner workspace plus seven council-member profiles. The PostgreSQL schema currently contains 17 tables with RLS enabled. There is no model provider, Edge Function gateway, background worker, or scheduled agent execution yet. Demo messages are seeded examples, not real agent output. Projects, journal entries, research ideas, and chat drafts remain device-local for now and are scoped to the signed-in user in that browser.
 
 ## Target architecture
 - **Web client:** this repository; Persian RTL, mobile-first PWA.
@@ -34,9 +34,11 @@ The GitHub Pages application is a browser-only prototype. It has no server proce
 - Create the project and apply a reviewed schema with RLS policies.
 - Deploy an authenticated Edge Function and store provider keys as server-side secrets.
 - Add the public Supabase URL and publishable key to the client configuration only; never add service-role or model keys to Git.
-- Connect the client to Auth and the database; verify RLS with separate owner and non-owner sessions.
+- [x] Connect the client to Auth and bootstrap an owner workspace and seven member profiles.
+- [ ] Connect project, task, meeting, message, journal, and research CRUD to the database.
+- [ ] Verify RLS with separate owner and non-owner sessions.
 - Add a bounded queue/scheduler and test pause, retry, quota, and human-approval paths.
 - Run end-to-end tests before enabling real agent actions.
 
 ## Not activated yet
-No Supabase project is currently connected to this repository, and neither of the connected Supabase accounts currently has a project available. Therefore the backend above is a design contract, not a live service.
+The Supabase project is live and connected for authentication and workspace bootstrap. The current database has 17 public tables and RLS enabled. The full application data sync, Edge Functions, model provider, event orchestrator, scheduler, and automated research are not active. The initial schema was applied directly and still needs a checked-in migration artifact before future schema changes.
