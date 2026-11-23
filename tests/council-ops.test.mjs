@@ -1,9 +1,10 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const fs = require('node:fs');
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
 
 const html = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1] || '';
+const ops = fs.readFileSync(new URL('../assets/council-ops.js', import.meta.url), 'utf8');
+const script = (html.match(/<script>([\s\S]*?)<\/script>/)?.[1] || '') + '\n' + ops;
 
 function extractFunction(name) {
   const start = script.indexOf('function ' + name + '(');
@@ -17,7 +18,7 @@ function extractFunction(name) {
   return script.slice(start, end);
 }
 
-test('operations screens are reachable and not demo placeholders', () => {
+test('operations screens are reachable', () => {
   for (const id of ['tasks', 'meetings', 'decisions']) {
     assert.match(html, new RegExp('id="' + id + '"'));
     assert.match(html, new RegExp('data-page="' + id + '"'));
@@ -42,4 +43,10 @@ test('database statuses map to stable Persian labels', () => {
   assert.equal(labels[0]('in_progress'), 'در حال انجام');
   assert.equal(labels[1]('completed'), 'پایان‌یافته');
   assert.equal(labels[2]('under_review'), 'در حال بررسی');
+});
+
+test('user-controlled content is escaped before HTML rendering', () => {
+  const fn = extractFunction('hqEsc');
+  const esc = new Function(fn + '; return hqEsc;')();
+  assert.equal(esc('<script>"x"&</script>'), '&lt;script&gt;&quot;x&quot;&amp;&lt;/script&gt;');
 });
