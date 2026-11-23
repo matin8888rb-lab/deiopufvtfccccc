@@ -29,7 +29,7 @@ test('task dependency validator rejects direct and indirect cycles', () => {
   const hasCycle = new Function(fn + '; return hqHasDependencyCycle;')();
   const deps = [{task_id:'a',depends_on_task_id:'b'},{task_id:'b',depends_on_task_id:'c'}];
   assert.equal(hasCycle('c','a',deps), true);
-  assert.equal(hasCycle('a','b',deps), true);
+  assert.equal(hasCycle('b','a',deps), true);
   assert.equal(hasCycle('a','c',deps), false);
   assert.equal(hasCycle('x','x',deps), true);
 });
