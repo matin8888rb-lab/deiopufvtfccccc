@@ -223,6 +223,7 @@ async function handleHQSession(session){
   try{
     const workspace=await ensureHQWorkspace(session.user);
     HQ_STORE_KEY='council-hq-local-v1:'+session.user.id;
+    if(typeof hqResetOps==='function')hqResetOps();
     projects.splice(0,projects.length,...JSON.parse(JSON.stringify(HQ_BASE_PROJECTS)));
     logs.splice(0,logs.length,...JSON.parse(JSON.stringify(HQ_BASE_LOGS)));
     research.splice(0,research.length);
