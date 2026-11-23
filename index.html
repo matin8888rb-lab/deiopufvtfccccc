@@ -70,4 +70,55 @@ $('logSearch').addEventListener('input',renderLogs);
 $('motionToggle').addEventListener('change',e=>document.body.classList.toggle('reduce-motion',e.target.checked));
 renderMembers();renderProjects();renderLogs();renderResearch();renderActivity();renderChat();
 if('serviceWorker' in navigator && location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+
+/* COUNCIL HQ persistence patch: local-only by design; no AI/background claims. */
+const HQ_STORE_KEY='council-hq-local-v1';
+function persistHQ(){
+  try{localStorage.setItem(HQ_STORE_KEY,JSON.stringify({projects,logs,research,chatHistory:window.__hqChatHistory||[]}));}catch(e){console.warn('Local save unavailable',e);}
+}
+try{
+  const saved=JSON.parse(localStorage.getItem(HQ_STORE_KEY)||'null');
+  if(saved){
+    if(Array.isArray(saved.projects)){projects.splice(0,projects.length,...saved.projects);}
+    if(Array.isArray(saved.logs)){logs.splice(0,logs.length,...saved.logs);}
+    if(Array.isArray(saved.research)){research.splice(0,research.length,...saved.research);}
+    window.__hqChatHistory=Array.isArray(saved.chatHistory)?saved.chatHistory:[];
+    renderProjects();renderLogs();renderResearch();
+    window.__hqChatHistory.forEach(m=>{
+      const el=document.createElement('div');el.className='msg';el.style.borderRightColor='#38bdf8';
+      const who=document.createElement('div');who.className='who';who.textContent='پیام شما';who.style.color='#38bdf8';
+      const p=document.createElement('p');p.textContent=m;
+      const sm=document.createElement('small');sm.textContent='ذخیره‌شده روی همین دستگاه';
+      el.append(who,p,sm);$('chatFeed').append(el);
+    });
+  }
+}catch(e){console.warn('Could not restore local workspace',e);}
+$('modalForm').addEventListener('submit',()=>persistHQ());
+$('researchForm').addEventListener('submit',()=>persistHQ());
+$('chatForm').addEventListener('submit',()=>{
+  const sent=$('chatInput').value.trim();
+  if(sent){window.__hqChatHistory=window.__hqChatHistory||[];window.__hqChatHistory.push(sent);setTimeout(persistHQ,0);}
+});
+$('projectSearch').addEventListener('input',persistHQ);
+const backupPanel=document.createElement('div');
+backupPanel.className='card';
+backupPanel.innerHTML='<div class="card-head"><h3>پشتیبان‌گیری فضای کاری</h3><span class="pill">محلی</span></div><p class="subtle">پروژه‌ها، دفترچه و پیشنهادهای پژوهشی روی همین مرورگر ذخیره می‌شوند. برای انتقال به دستگاه دیگر نسخه پشتیبان بگیر.</p><div class="toolbar"><button class="primary" type="button" id="hqExport">دریافت نسخه پشتیبان</button><label class="ghost-btn" style="cursor:pointer">بازیابی نسخه پشتیبان<input id="hqImport" type="file" accept="application/json" hidden></label></div>';
+$('settings').append(backupPanel);
+$('hqExport').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify({projects,logs,research,chatHistory:window.__hqChatHistory||[]},null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='council-hq-backup.json';a.click();URL.revokeObjectURL(url);
+});
+$('hqImport').addEventListener('change',async e=>{
+  try{const obj=JSON.parse(await e.target.files[0].text());
+    if(!obj||!Array.isArray(obj.projects)||!Array.isArray(obj.logs)||!Array.isArray(obj.research))throw Error('invalid');
+    if(!confirm('اطلاعات فعلی با نسخه پشتیبان جایگزین شود؟'))return;
+    projects.splice(0,projects.length,...obj.projects);logs.splice(0,logs.length,...obj.logs);research.splice(0,research.length,...obj.research);
+    window.__hqChatHistory=Array.isArray(obj.chatHistory)?obj.chatHistory:[];
+    persistHQ();renderProjects();renderLogs();renderResearch();renderChat();
+    window.__hqChatHistory.forEach(m=>{const el=document.createElement('div');el.className='msg';const p=document.createElement('p');p.textContent=m;el.append(p);$('chatFeed').append(el);});
+    toast('نسخه پشتیبان بازیابی شد');
+  }catch(err){toast('فایل پشتیبان معتبر نیست');}
+  e.target.value='';
+});
+
 </script></body></html>
